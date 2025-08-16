@@ -3,13 +3,10 @@ package com.crud.users.services;
 import com.crud.users.dtos.address.AddressDTO;
 import com.crud.users.dtos.address.CreateAddressDTO;
 import com.crud.users.dtos.address.UpdateAddressDTO;
-import com.crud.users.dtos.external.ViaCepResponseDTO;
 import com.crud.users.entities.Address;
 import com.crud.users.entities.User;
 import com.crud.users.exceptions.EntityNotFoundException;
-import com.crud.users.exceptions.InvalidCepException;
 import com.crud.users.repositories.AddressRepository;
-import com.crud.users.repositories.UserRepository;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -17,12 +14,12 @@ public class AddressService {
 
     private final AddressRepository addressRepository;
     private final UserService userService;
-    private final ApiRequestService apiRequestService;
+    private final CepService cepService;
 
-    public AddressService(AddressRepository addressRepository, UserRepository userRepository, UserService userService, ApiRequestService apiRequestService) {
+    public AddressService(AddressRepository addressRepository, UserService userService, CepService cepService) {
         this.addressRepository = addressRepository;
         this.userService = userService;
-        this.apiRequestService = apiRequestService;
+        this.cepService = cepService;
     }
 
     public AddressDTO findAddressById(Long id) {
@@ -37,23 +34,12 @@ public class AddressService {
     }
 
     public AddressDTO createAddress(CreateAddressDTO addressDTO, Long userId) {
-        validateCEP(addressDTO.cep());
         User user = userService.fetchUserOrThrowErrorIfNotFound(userId);
+        cepService.validateCep(addressDTO.cep());
         Address address = new Address(addressDTO);
         address.setUser(user);
         Address savedAddress = addressRepository.save(address);
         return new AddressDTO(savedAddress);
-    }
-
-    public void validateCEP(String cep) {
-        String url = "https://viacep.com.br/ws/{cep}/json/".replace("{cep}", cep);
-        InvalidCepException invalidCepException = new InvalidCepException(cep);
-        ViaCepResponseDTO response = apiRequestService.fetchAndMapForType(url, ViaCepResponseDTO.class, invalidCepException);
-
-        String error = response.erro();
-        if (error != null && error.equals("true")) {
-            throw invalidCepException;
-        }
     }
 
     public AddressDTO updateAddress(UpdateAddressDTO addressDTO, Long id) {
@@ -67,7 +53,7 @@ public class AddressService {
         String state = addressDTO.state();
 
         if (cep != null) {
-            validateCEP(cep);
+            cepService.validateCep(cep);
             address.setCep(cep);
         }
 
