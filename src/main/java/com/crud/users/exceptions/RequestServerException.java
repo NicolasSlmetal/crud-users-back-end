@@ -5,15 +5,12 @@ import lombok.Getter;
 @Getter
 public class RequestServerException extends RuntimeException {
 
-    private Object bodyResponse;
-    private String url;
-
-    public RequestServerException(String message) {
-        super(message);
-    }
+    private final Object bodyResponse;
+    private final String url;
 
     public RequestServerException(String message, Object bodyResponse, String url) {
         super(message);
         this.bodyResponse = bodyResponse;
+        this.url = url;
     }
 }
